@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estación ILAPLA66 | WundeMap</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Montserrat:wght@800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+    :root {
+        --primary:      #003f6b;
+        --primary-mid:  #005a99;
+        --secondary:    #6ba4d6;
+        --secondary-lt: #c9e1f0;
+        --bg-body:      #eef2f7;
+        --bg-panel:     #ffffff;
+        --text-main:    #1e293b;
+        --text-muted:   #64748b;
+        --border:       #dde4ed;
+        --accent:       #0ea5e9;
+        --danger:       #ef4444;
+        --green:        #059669;
+        --amber:        #d97706;
+        --purple:       #7c3aed;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg-body); color: var(--text-main); min-height: 100vh; }
+    h1, h2, .montserrat { font-family: 'Montserrat', sans-serif; }
+
+    header { background: var(--primary); color: white; padding: 22px 28px; box-shadow: 0 2px 12px rgba(0,0,0,0.12); }
+    .header-inner { max-width: 1100px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; }
+    header h1 { font-size: 1.3rem; font-weight: 900; text-transform: uppercase; letter-spacing: -0.3px; display: flex; align-items: center; gap: 10px; }
+    .live-dot { width: 9px; height: 9px; border-radius: 50%; background: #22c55e; animation: blink 1.6s infinite; flex-shrink: 0; }
+    @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.25;} }
+    header a.wu-link { color: white; opacity: 0.85; font-size: 0.78rem; font-weight: 700; text-decoration: underline; }
+    header a.wu-link:hover { opacity: 1; }
+
+    main { max-width: 1100px; margin: 0 auto; padding: 26px 20px 60px; }
+
+    .status-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+    .status-bar .updated { font-size: 0.82rem; font-weight: 700; color: var(--text-muted); }
+    .status-bar .badge { background: white; border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: 0.75rem; font-weight: 800; color: var(--primary); }
+
+    .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px; }
+    .metric-card { background: var(--bg-panel); border-radius: 14px; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.04); padding: 18px 20px; border-left: 4px solid var(--accent); transition: transform 0.15s ease; }
+    .metric-card:hover { transform: translateY(-2px); }
+    .metric-card.temp { border-left-color: var(--danger); }
+    .metric-card.hum  { border-left-color: var(--accent); }
+    .metric-card.pres { border-left-color: var(--purple); }
+    .metric-card.wind { border-left-color: var(--green); }
+    .metric-card.uv   { border-left-color: var(--amber); }
+    .metric-card.rain { border-left-color: #0284c7; }
+    .metric-label { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); margin-bottom: 8px; }
+    .metric-value { font-size: 2rem; font-weight: 900; font-family: 'Montserrat', sans-serif; color: var(--text-main); line-height: 1; }
+    .metric-unit { font-size: 0.95rem; font-weight: 700; color: var(--text-muted); margin-left: 4px; }
+    .metric-sub { font-size: 0.76rem; font-weight: 700; color: var(--text-muted); margin-top: 8px; }
+
+    .section-title { font-size: 0.95rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.4px; color: var(--primary); margin: 24px 0 12px; }
+
+    .wind-card { background: var(--bg-panel); border-radius: 14px; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.04); padding: 22px; display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
+    .compass-wrap { width: 130px; height: 130px; flex-shrink: 0; position: relative; }
+    .compass-wrap .lbl { position: absolute; font-size: 0.68rem; font-weight: 800; color: var(--text-muted); }
+    .compass-wrap .n { top: 2px; left: 50%; transform: translateX(-50%); }
+    .compass-wrap .s { bottom: 2px; left: 50%; transform: translateX(-50%); }
+    .compass-wrap .e { right: 0; top: 50%; transform: translateY(-50%); }
+    .compass-wrap .w { left: 0; top: 50%; transform: translateY(-50%); }
+    .wind-facts { display: flex; gap: 32px; flex-wrap: wrap; }
+    .wind-fact-label { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+    .wind-fact-value { font-size: 1.5rem; font-weight: 900; font-family: 'Montserrat', sans-serif; }
+
+    .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-top: 10px; }
+    .meta-item { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; }
+    .meta-item .k { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); }
+    .meta-item .v { font-size: 0.92rem; font-weight: 800; margin-top: 3px; }
+
+    .error-banner { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; border-radius: 10px; padding: 12px 16px; font-size: 0.85rem; font-weight: 700; margin-bottom: 18px; display: none; }
+    .error-banner.show { display: block; }
+
+    .hist-controls { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+    .hist-controls label { font-size: 0.78rem; font-weight: 800; color: var(--text-muted); }
+    .hist-controls input[type=date] { border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; font-family: inherit; font-size: 0.85rem; font-weight: 700; color: var(--text-main); background: var(--bg-body); }
+    .hist-controls button { border: none; background: var(--primary); color: white; font-family: inherit; font-weight: 800; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.3px; padding: 9px 16px; border-radius: 8px; cursor: pointer; }
+    .hist-controls button:hover { background: var(--primary-mid); }
+    .hist-controls button.ghost { background: var(--bg-body); color: var(--primary); }
+    .hist-status { font-size: 0.78rem; font-weight: 700; color: var(--text-muted); }
+
+    .hist-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 14px; margin-bottom: 16px; }
+    .hist-chart-card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+    .hist-chart-card h4 { font-size: 0.8rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; }
+    .hist-chart-card .chart-wrap { height: 220px; position: relative; }
+
+    .hist-table-wrap { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 14px; overflow: auto; max-height: 420px; }
+    #hist-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    #hist-table th, #hist-table td { padding: 8px 12px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--border); }
+    #hist-table th:first-child, #hist-table td:first-child { text-align: left; }
+    #hist-table th { position: sticky; top: 0; background: var(--bg-panel); color: var(--text-muted); font-weight: 800; text-transform: uppercase; font-size: 0.68rem; z-index: 1; }
+    #hist-table tbody tr:hover { background: var(--bg-body); }
+
+    footer { text-align: center; padding: 20px; font-size: 0.75rem; color: var(--text-muted); }
+</style>
+</head>
+<body>
+
+<header>
+    <div class="header-inner">
+        <h1><span class="live-dot"></span> Estación ILAPLA66</h1>
+        <a class="wu-link" href="https://www.wunderground.com/dashboard/pws/ILAPLA66" target="_blank">Ver en Wunderground →</a>
+    </div>
+</header>
+
+<main>
+    <div class="error-banner" id="error-banner"></div>
+
+    <div class="status-bar">
+        <div class="badge" id="station-neighborhood">Estación Personal — WundeMap</div>
+        <div class="updated" id="updated-lbl">Última actualización: --</div>
+    </div>
+
+    <div class="metrics-grid">
+        <div class="metric-card temp">
+            <div class="metric-label">🌡 Temperatura</div>
+            <div><span class="metric-value" id="v-temp">--</span><span class="metric-unit">°C</span></div>
+            <div class="metric-sub" id="v-feel">Sensación térmica: --</div>
+        </div>
+        <div class="metric-card hum">
+            <div class="metric-label">💧 Humedad Relativa</div>
+            <div><span class="metric-value" id="v-hum">--</span><span class="metric-unit">%</span></div>
+            <div class="metric-sub" id="v-dewpt">Punto de rocío: --</div>
+        </div>
+        <div class="metric-card pres">
+            <div class="metric-label">🔵 Presión Atmosférica</div>
+            <div><span class="metric-value" id="v-pres">--</span><span class="metric-unit">hPa</span></div>
+            <div class="metric-sub" id="v-elev">Elevación: --</div>
+        </div>
+        <div class="metric-card uv">
+            <div class="metric-label">☀️ Índice UV</div>
+            <div><span class="metric-value" id="v-uv">--</span></div>
+            <div class="metric-sub" id="v-solar">Radiación solar: --</div>
+        </div>
+        <div class="metric-card rain">
+            <div class="metric-label">🌧 Precipitación</div>
+            <div><span class="metric-value" id="v-precip-rate">--</span><span class="metric-unit">mm/h</span></div>
+            <div class="metric-sub" id="v-precip-total">Acumulada hoy: --</div>
+        </div>
+    </div>
+
+    <div class="section-title">Viento</div>
+    <div class="wind-card">
+        <div class="compass-wrap">
+            <svg width="130" height="130" viewBox="0 0 130 130">
+                <circle cx="65" cy="65" r="58" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
+                <circle cx="65" cy="65" r="40" fill="none" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="3,3"/>
+                <circle cx="65" cy="65" r="20" fill="none" stroke="#e2e8f0" stroke-width="1"/>
+                <line x1="65" y1="7" x2="65" y2="123" stroke="#e2e8f0" stroke-width="1"/>
+                <line x1="7" y1="65" x2="123" y2="65" stroke="#e2e8f0" stroke-width="1"/>
+                <g id="compass-arrow" transform="rotate(0 65 65)">
+                    <polygon points="65,12 71,65 65,56 59,65" fill="#ef4444"/>
+                    <polygon points="65,118 71,65 65,74 59,65" fill="#94a3b8"/>
+                </g>
+            </svg>
+            <div class="lbl n">N</div><div class="lbl s">S</div><div class="lbl e">E</div><div class="lbl w">O</div>
+        </div>
+        <div class="wind-facts">
+            <div>
+                <div class="wind-fact-label">Velocidad</div>
+                <div class="wind-fact-value" id="v-wind">-- km/h</div>
+            </div>
+            <div>
+                <div class="wind-fact-label">Ráfaga</div>
+                <div class="wind-fact-value" id="v-gust">-- km/h</div>
+            </div>
+            <div>
+                <div class="wind-fact-label">Dirección</div>
+                <div class="wind-fact-value" id="v-wind-dir">--</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section-title">Datos de la Estación</div>
+    <div class="meta-grid">
+        <div class="meta-item"><div class="k">Station ID</div><div class="v">ILAPLA66</div></div>
+        <div class="meta-item"><div class="k">Ubicación</div><div class="v" id="v-latlon">--</div></div>
+        <div class="meta-item"><div class="k">Hora de observación</div><div class="v" id="v-obstime">--</div></div>
+        <div class="meta-item"><div class="k">Software</div><div class="v" id="v-software">--</div></div>
+    </div>
+
+    <div class="section-title">Histórico</div>
+    <div class="hist-controls">
+        <label for="hist-date">Fecha:</label>
+        <input type="date" id="hist-date">
+        <button onclick="fetchHistory()">Consultar</button>
+        <button class="ghost" onclick="setHistDate(0)">Hoy</button>
+        <button class="ghost" onclick="setHistDate(-1)">Ayer</button>
+        <span class="hist-status" id="hist-status"></span>
+    </div>
+
+    <div class="hist-charts" id="hist-charts" style="display:none;">
+        <div class="hist-chart-card">
+            <h4>Temperatura y Humedad</h4>
+            <div class="chart-wrap"><canvas id="chartHistTempHum"></canvas></div>
+        </div>
+        <div class="hist-chart-card">
+            <h4>Viento (km/h)</h4>
+            <div class="chart-wrap"><canvas id="chartHistWind"></canvas></div>
+        </div>
+    </div>
+
+    <div class="hist-table-wrap" id="hist-table-wrap" style="display:none;">
+        <table id="hist-table">
+            <thead>
+                <tr>
+                    <th>Hora</th><th>Temp (°C)</th><th>Hum (%)</th><th>Presión (hPa)</th>
+                    <th>Viento (km/h)</th><th>Ráfaga (km/h)</th><th>Dirección</th><th>Precip. (mm)</th>
+                </tr>
+            </thead>
+            <tbody id="hist-table-body"></tbody>
+        </table>
+    </div>
+</main>
+
+<footer>Datos provistos por Weather Underground (PWS ILAPLA66) · Se actualiza automáticamente cada 5 minutos</footer>
+
+<script>
+const WU_STATION_ID = "ILAPLA66";
+const WU_API_KEY    = "470147c769f6493f8147c769f6693fd9";
+const WU_URL        = `https://api.weather.com/v2/pws/observations/current?stationId=${WU_STATION_ID}&format=json&units=m&apiKey=${WU_API_KEY}`;
+
+function setText(id, val) { const el = document.getElementById(id); if (el) el.innerText = val; }
+function fmt(v, dec = 1) { return (v === null || v === undefined || isNaN(v)) ? '--' : Number(v).toFixed(dec); }
+
+function degreesToCardinal(deg) {
+    if (deg == null || isNaN(deg)) return '--';
+    const dirs = ['Norte','Noreste','Este','Sudeste','Sur','Sudoeste','Oeste','Noroeste'];
+    const d = ((deg % 360) + 360) % 360;
+    return dirs[Math.round(d / 45) % 8];
+}
+
+function showError(msg) {
+    const el = document.getElementById('error-banner');
+    el.innerText = msg;
+    el.classList.add('show');
+}
+function hideError() {
+    document.getElementById('error-banner').classList.remove('show');
+}
+
+async function fetchWU() {
+    let r;
+    try {
+        r = await fetch(WU_URL, { cache: 'no-store' });
+    } catch (e) {
+        console.error('Error de red al llamar a la API de Wunderground:', e);
+        showError('No se pudo conectar con la API de Wunderground (fallo de red o CORS). Si esta página está abierta como archivo local, probá servirla desde un servidor HTTP en vez de abrirla con doble clic. Detalle técnico: ' + e.message);
+        return;
+    }
+
+    if (!r.ok) {
+        let bodyText = '';
+        try { bodyText = await r.text(); } catch (_) {}
+        console.error('La API de Wunderground respondió con error:', r.status, bodyText);
+        showError(`La API de Wunderground respondió con error HTTP ${r.status}. ${bodyText ? 'Respuesta: ' + bodyText : ''}`);
+        return;
+    }
+
+    try {
+        const d = await r.json();
+        const obs = d.observations && d.observations[0];
+        if (!obs) { showError('La estación no devolvió observaciones recientes (puede estar offline).'); return; }
+
+        hideError();
+        const m = obs.metric;
+
+        setText('v-temp', fmt(m.temp, 1));
+        setText('v-feel', `Sensación térmica: ${fmt(m.heatIndex ?? m.windChill, 1)}°C`);
+
+        setText('v-hum', fmt(obs.humidity, 0));
+        setText('v-dewpt', `Punto de rocío: ${fmt(m.dewpt, 1)}°C`);
+
+        setText('v-pres', fmt(m.pressure, 1));
+        setText('v-elev', `Elevación: ${fmt(m.elev, 0)} m`);
+
+        setText('v-uv', fmt(obs.uv, 0));
+        setText('v-solar', `Radiación solar: ${fmt(obs.solarRadiation, 0)} W/m²`);
+
+        setText('v-precip-rate', fmt(m.precipRate, 1));
+        setText('v-precip-total', `Acumulada hoy: ${fmt(m.precipTotal, 1)} mm`);
+
+        setText('v-wind', `${fmt(m.windSpeed, 1)} km/h`);
+        setText('v-gust', `${fmt(m.windGust, 1)} km/h`);
+        setText('v-wind-dir', `${degreesToCardinal(obs.winddir)} (${fmt(obs.winddir, 0)}°)`);
+        const arrowEl = document.getElementById('compass-arrow');
+        if (arrowEl && obs.winddir != null && !isNaN(obs.winddir)) {
+            arrowEl.setAttribute('transform', `rotate(${((obs.winddir % 360) + 360) % 360} 65 65)`);
+        }
+
+        setText('v-latlon', (obs.lat != null && obs.lon != null) ? `${obs.lat.toFixed(4)}, ${obs.lon.toFixed(4)}` : '--');
+        setText('v-software', obs.softwareType || '--');
+        setText('station-neighborhood', obs.neighborhood ? `📍 ${obs.neighborhood}` : 'Estación Personal — WundeMap');
+
+        const obsDate = new Date(obs.obsTimeLocal ? obs.obsTimeLocal.replace(' ', 'T') : obs.obsTimeUtc);
+        setText('v-obstime', obsDate.toLocaleString('es-AR'));
+        setText('updated-lbl', `Última actualización: ${obsDate.toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'})} hs`);
+
+    } catch (e) {
+        console.error('Error al procesar la respuesta de Wunderground:', e);
+        showError('Se recibió una respuesta inesperada de la API de Wunderground. Detalle: ' + e.message);
+    }
+}
+
+fetchWU();
+setInterval(fetchWU, 5 * 60 * 1000);
+
+// ─── HISTÓRICO ────────────────────────────────────────────────────────────────
+let _histCharts = {};
+
+function ymd(date) {
+    return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+}
+
+function setHistDate(offsetDays) {
+    const d = new Date();
+    d.setDate(d.getDate() + offsetDays);
+    document.getElementById('hist-date').value = ymd(d);
+    fetchHistory();
+}
+
+function histField(obs, ...keys) {
+    const m = obs.metric || {};
+    for (const k of keys) {
+        if (obs[k] !== undefined && obs[k] !== null) return obs[k];
+        if (m[k] !== undefined && m[k] !== null) return m[k];
+    }
+    return null;
+}
+
+function setHistStatus(msg) {
+    document.getElementById('hist-status').innerText = msg;
+}
+
+async function fetchHistory() {
+    const dateInput = document.getElementById('hist-date').value;
+    if (!dateInput) { setHistStatus('Elegí una fecha.'); return; }
+
+    const dateParam = dateInput.replace(/-/g, '');
+    const url = `https://api.weather.com/v2/pws/history/all?stationId=${WU_STATION_ID}&format=json&units=m&apiKey=${WU_API_KEY}&date=${dateParam}`;
+
+    setHistStatus('Cargando...');
+    document.getElementById('hist-charts').style.display = 'none';
+    document.getElementById('hist-table-wrap').style.display = 'none';
+
+    let r;
+    try {
+        r = await fetch(url, { cache: 'no-store' });
+    } catch (e) {
+        console.error('Error de red al consultar histórico:', e);
+        setHistStatus('Error de red al consultar el histórico: ' + e.message);
+        return;
+    }
+
+    if (!r.ok) {
+        let bodyText = '';
+        try { bodyText = await r.text(); } catch (_) {}
+        console.error('La API de histórico respondió con error:', r.status, bodyText);
+        setHistStatus(`Error HTTP ${r.status}. ${bodyText}`);
+        return;
+    }
+
+    let d;
+    try {
+        d = await r.json();
+    } catch (e) {
+        setHistStatus('Respuesta inválida del servidor.');
+        return;
+    }
+
+    const obsList = d.observations || [];
+    if (obsList.length === 0) {
+        setHistStatus('No hay datos históricos para esa fecha.');
+        return;
+    }
+
+    setHistStatus(`${obsList.length} registros encontrados.`);
+    renderHistTable(obsList);
+    renderHistCharts(obsList);
+}
+
+function renderHistTable(obsList) {
+    const tbody = document.getElementById('hist-table-body');
+    tbody.innerHTML = '';
+
+    obsList.forEach(obs => {
+        const timeLbl = (obs.obsTimeLocal || obs.obsTimeUtc || '').split(' ')[1] || obs.obsTimeLocal || '--';
+        const temp   = histField(obs, 'tempAvg', 'temp');
+        const hum    = histField(obs, 'humidityAvg', 'humidity');
+        const pres   = histField(obs, 'pressureMax', 'pressureAvg', 'pressure');
+        const wind   = histField(obs, 'windspeedAvg', 'windSpeed');
+        const gust   = histField(obs, 'windgustHigh', 'windgustAvg', 'windGust');
+        const wdir   = histField(obs, 'winddirAvg', 'winddir');
+        const precip = histField(obs, 'precipTotal');
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${timeLbl}</td>
+            <td>${fmt(temp, 1)}</td>
+            <td>${fmt(hum, 0)}</td>
+            <td>${fmt(pres, 1)}</td>
+            <td>${fmt(wind, 1)}</td>
+            <td>${fmt(gust, 1)}</td>
+            <td>${degreesToCardinal(wdir)}</td>
+            <td>${fmt(precip, 1)}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    document.getElementById('hist-table-wrap').style.display = 'block';
+}
+
+function renderHistCharts(obsList) {
+    const labels = obsList.map(obs => (obs.obsTimeLocal || obs.obsTimeUtc || '').split(' ')[1] || '');
+    const temps  = obsList.map(obs => histField(obs, 'tempAvg', 'temp'));
+    const hums   = obsList.map(obs => histField(obs, 'humidityAvg', 'humidity'));
+    const winds  = obsList.map(obs => histField(obs, 'windspeedAvg', 'windSpeed'));
+    const gusts  = obsList.map(obs => histField(obs, 'windgustHigh', 'windgustAvg', 'windGust'));
+
+    Object.values(_histCharts).forEach(c => c.destroy());
+    _histCharts = {};
+
+    const ctxTH = document.getElementById('chartHistTempHum').getContext('2d');
+    _histCharts.th = new Chart(ctxTH, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [
+                { label: 'Temperatura (°C)', data: temps, borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.1)', yAxisID: 'y', tension: 0.25, pointRadius: 0 },
+                { label: 'Humedad (%)', data: hums, borderColor: '#0ea5e9', backgroundColor: 'rgba(14,165,233,0.1)', yAxisID: 'y1', tension: 0.25, pointRadius: 0 }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            scales: {
+                y:  { type: 'linear', position: 'left' },
+                y1: { type: 'linear', position: 'right', grid: { drawOnChartArea: false } }
+            }
+        }
+    });
+
+    const ctxW = document.getElementById('chartHistWind').getContext('2d');
+    _histCharts.wind = new Chart(ctxW, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [
+                { label: 'Viento (km/h)', data: winds, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', tension: 0.25, pointRadius: 0 },
+                { label: 'Ráfaga (km/h)', data: gusts, borderColor: '#94a3b8', backgroundColor: 'rgba(148,163,184,0.1)', tension: 0.25, pointRadius: 0 }
+            ]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+
+    document.getElementById('hist-charts').style.display = 'grid';
+}
+
+setHistDate(0);
+</script>
+
+</body>
+</html>
